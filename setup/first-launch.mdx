@@ -1,0 +1,53 @@
+---
+title: "First launch and tutorial walkthrough"
+description: "Walk through the LSFG-Android first-launch tutorial covering overlay permission, Accessibility setup, Restricted Settings, and target app selection."
+---
+
+When you open LSFG-Android for the first time, the app walks you through a short onboarding tutorial before anything else runs. The tutorial exists because the overlay requires a few Android permissions and, on Android 13 and later, sideloaded apps face an extra system restriction that must be lifted manually. Completing it end-to-end takes only a few minutes and unlocks all of the app's core functionality.
+
+## What the tutorial covers
+
+The tutorial guides you through three areas: granting overlay permission, optionally enabling the accessibility service for OEM compatibility, and picking the target apps that should trigger the overlay automatically when brought to the foreground.
+
+<Steps>
+  <Step title="Grant overlay (SYSTEM_ALERT_WINDOW) permission">
+    The app prompts you to allow it to draw over other apps. This is the base permission that lets the frame-generation overlay sit on top of your game. Android will open the system settings screen for LSFG-Android directly — tap **Allow**.
+  </Step>
+
+  <Step title="Unblock Restricted Settings on Android 13+">
+    On Android 13 and later, apps installed outside of Google Play are subject to Restricted Settings. This restriction prevents sideloaded apps from activating an accessibility service until you explicitly unblock them.
+
+    To unblock LSFG-Android:
+
+    1. Open **Settings → Apps → LSFG-Android**.
+    2. Tap the three-dot menu in the top-right corner.
+    3. Select **Allow restricted settings**.
+
+    The tutorial screen will show this step only when the system detects that it applies to your device.
+  </Step>
+
+  <Step title="Enable LsfgAccessibilityService">
+    After Restricted Settings are cleared, the tutorial directs you to **Settings → Accessibility → Installed apps → LSFG-Android** and prompts you to toggle on **LsfgAccessibilityService**. Confirm any system dialog that appears.
+
+    <Note>
+      The accessibility service is optional but strongly recommended. When enabled, the overlay is hosted as a `TYPE_ACCESSIBILITY_OVERLAY` window rather than a plain `SYSTEM_ALERT_WINDOW`. Some OEM Android builds apply strict untrusted-touch filters that block input on `SYSTEM_ALERT_WINDOW` overlays — using the accessibility overlay type bypasses those filters and restores full touch passthrough. If your device has no such restriction, the overlay works either way.
+    </Note>
+  </Step>
+
+  <Step title="Select target apps">
+    The final tutorial step lets you choose which apps (games) should automatically arm the overlay. When a selected app comes to the foreground, LSFG-Android's foreground service activates the overlay without any manual intervention. You can add or remove target apps later from the main settings screen.
+  </Step>
+
+  <Step title="Choose an entry mode">
+    Before finishing, the tutorial asks how you want to invoke the overlay when a target app is running. There are two options:
+
+    - **Draggable launcher dot** — a small floating dot appears on screen. Drag it anywhere, then tap it to open the overlay controls.
+    - **Icon button on screen edge** — a button is anchored to a configurable edge of the screen (left or right). Tap it to expand the overlay controls.
+
+    Both modes are toggleable and configurable from the settings drawer at any time after onboarding.
+  </Step>
+</Steps>
+
+## After the tutorial
+
+Once the tutorial is complete, LSFG-Android is fully set up. The foreground service will start automatically the next time one of your selected target apps is launched, and the overlay will be ready to activate frame generation.

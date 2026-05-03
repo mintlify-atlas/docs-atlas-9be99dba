@@ -1,0 +1,44 @@
+---
+title: "Required permissions and what they do"
+description: "LSFG-Android needs overlay, screen capture, and accessibility permissions to run. Learn what each permission does and why it's needed."
+---
+
+LSFG-Android combines a system overlay, a screen-capture pipeline, and a foreground service to deliver frame generation on top of any game. Each of those mechanisms requires a distinct Android permission, and Android surfaces consent prompts for most of them at runtime. This page describes every permission the app requests, what it enables, and how to grant it.
+
+<Warning>
+  On Android 13 and later, apps installed outside of Google Play are subject to **Restricted Settings**. This system restriction silently prevents sideloaded apps from activating an accessibility service — even if you navigate to the accessibility settings and try to toggle it on. You must explicitly unblock LSFG-Android before the accessibility service step will work. See the [first-launch tutorial](/setup/first-launch) for the exact steps.
+</Warning>
+
+<AccordionGroup>
+  <Accordion title="Overlay — SYSTEM_ALERT_WINDOW">
+    **What it is:** `SYSTEM_ALERT_WINDOW` is the Android permission that allows an app to draw windows on top of all other apps.
+
+    **Why LSFG-Android needs it:** The frame-generation output is composited in a system overlay that sits on top of the target game. Without this permission, the overlay window cannot be created and frame generation cannot be displayed.
+
+    **How to grant it:** Android will open the per-app overlay settings screen when the app requests this permission. Tap **Allow displaying over other apps** to grant it. You can also reach this screen manually at **Settings → Apps → LSFG-Android → Display over other apps**.
+  </Accordion>
+
+  <Accordion title="Screen capture — MediaProjection">
+    **What it is:** MediaProjection is the Android API that allows an app to capture the device's screen. It requires explicit user consent each time a new capture session begins, and Android displays a persistent system indicator (a notification or status-bar icon) for the duration of any active capture.
+
+    **Why LSFG-Android needs it:** Because Android 12+ blocks loading external code into non-debuggable processes, the frame-generation layer cannot hook another app's Vulkan swapchain directly. Instead, the app captures game frames through MediaProjection and runs interpolation on that stream, then composites the generated frames in the overlay. The capture is used exclusively for the visible frame-generation video path.
+
+    **How to grant it:** A system dialog appears each time you start a frame-generation session asking whether to allow screen recording. Tap **Start now** to allow capture for that session. This consent prompt is mandatory — Android does not allow it to be bypassed or pre-granted.
+  </Accordion>
+
+  <Accordion title="Accessibility service — LsfgAccessibilityService (optional)">
+    **What it is:** `LsfgAccessibilityService` is an Android `AccessibilityService` declared by LSFG-Android. When enabled, it hosts the overlay as a `TYPE_ACCESSIBILITY_OVERLAY` window instead of a standard `SYSTEM_ALERT_WINDOW`.
+
+    **Why LSFG-Android needs it:** Some OEM Android builds apply strict untrusted-touch filters that block input passthrough on `SYSTEM_ALERT_WINDOW` overlays. Hosting the overlay as a `TYPE_ACCESSIBILITY_OVERLAY` bypasses those filters and restores full touch passthrough at full overlay opacity. This service is optional — if your device does not have strict untrusted-touch restrictions, the overlay works without it.
+
+    **How to grant it:** Navigate to **Settings → Accessibility → Installed apps → LSFG-Android** and toggle on **LsfgAccessibilityService**. Confirm any system dialog. On Android 13+ with a sideloaded APK, you must first unblock Restricted Settings before this toggle becomes available — see the [first-launch tutorial](/setup/first-launch) for details.
+  </Accordion>
+
+  <Accordion title="Notifications — foreground service notification">
+    **What it is:** Android requires apps that run a foreground service to post a persistent notification for the duration of that service. On Android 13+, posting notifications also requires the `POST_NOTIFICATIONS` runtime permission.
+
+    **Why LSFG-Android needs it:** The overlay and frame-generation pipeline run inside a foreground service so that Android does not terminate them while a game is in the foreground. The persistent notification is a mandatory system requirement for any foreground service, not an optional feature of the app.
+
+    **How to grant it:** On Android 13 and later, the app will prompt for notification permission at first launch. Tap **Allow**. You can also manage this at **Settings → Apps → LSFG-Android → Notifications**.
+  </Accordion>
+</AccordionGroup>

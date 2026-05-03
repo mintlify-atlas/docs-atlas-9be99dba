@@ -1,0 +1,50 @@
+---
+title: 'Contributing to LSFG-Android'
+description: 'Learn how to contribute to LSFG-Android — the Android port of lsfg-vk. Covers licensing, attribution requirements, and the patch structure.'
+---
+
+LSFG-Android is an open-source Android port of the `lsfg-vk` Vulkan frame-generation layer. Contributions are welcome, but the project carries licensing terms that are more restrictive than a standard MIT release. Before contributing or forking, read this page in full to understand what you may and may not do with the code.
+
+## License structure
+
+The repository uses three separate licenses depending on the subdirectory:
+
+| Subdirectory | License | License file |
+|---|---|---|
+| Repository root | MIT | `LICENSE` |
+| `LSFG-Android/` | Custom License — No Play Store, No Commercial Use | `LSFG-Android/LICENSE` |
+| `lsfg-vk-android/` | MIT (inherited from upstream `lsfg-vk`) | `lsfg-vk-android/LICENSE.md` |
+
+When redistributing the repository as a whole, you must reproduce all three license files and respect the most restrictive terms that apply to each subtree.
+
+<Warning>
+  The `LSFG-Android/` subdirectory is released under a **Custom License that prohibits publication on Google Play and all other commercial app stores, and prohibits any commercial use**. This restriction exists because the combination of `SYSTEM_ALERT_WINDOW`, screen capture, and `AccessibilityService` violates Google Play policy, and because the project depends on shader assets extracted from a commercially licensed product (`Lossless.dll`). Do not publish a build of this app — modified or unmodified — on Google Play or any commercial distribution channel.
+</Warning>
+
+## Attribution requirements
+
+LSFG-Android builds on the work of several upstream projects. Any fork, derivative work, or redistribution must keep all of the following attributions intact. This is both a legal requirement of the applicable licenses and a project norm.
+
+<Note>
+  Both the upstream `lsfg-vk` attribution and the LSFG-Android port attribution must be preserved in any fork or derivative work. Removing or obscuring either credit is not permitted.
+</Note>
+
+The credits to preserve are:
+
+- **[PancakeTAS](https://github.com/PancakeTAS) and the `lsfg-vk` contributors** — authors of the original [`lsfg-vk`](https://github.com/PancakeTAS/lsfg-vk) Vulkan frame-generation layer, which is the backbone of this port.
+- **THS / Lossless Scaling** — original authors of the Lossless Scaling frame-generation shaders. Shaders are extracted on-device from the user's own legitimately purchased copy of `Lossless.dll` and are never redistributed.
+- **[FrankBarretta](https://github.com/FrankBarretta)** — author of the Android port: JNI/Vulkan glue, AHardwareBuffer-based image sharing, MediaProjection capture pipeline, overlay/foreground service, accessibility-overlay touch passthrough, Compose UI, settings drawer, automatic overlay, draggable launcher dot, first-run tutorial, Shizuku integration, frame graph HUD, crash reporter, Vulkan swapchain output, and the upstream patches in `lsfg-vk-android/`.
+
+## Lossless.dll
+
+`Lossless.dll` is the property of THS / Lossless Scaling. It is not distributed by this project under any circumstances and must never be redistributed in any fork or derivative work. The app extracts the necessary shaders on-device from the user's own legitimately purchased copy, then deletes the local DLL copy.
+
+## Patch structure
+
+Android-specific changes to `lsfg-vk` are isolated behind `#ifdef __ANDROID__` guards in the `lsfg-vk-android/` submodule. If you are contributing changes to the frame-generation library, keep this discipline: Android-only code must be guarded so the Linux build path remains unaffected.
+
+## Community
+
+Discussions, questions, and bug reports happen on the project Discord server:
+
+[discord.gg/CkuumNJ7s4](https://discord.gg/CkuumNJ7s4)

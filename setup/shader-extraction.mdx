@@ -1,0 +1,58 @@
+---
+title: "Extract shaders from Lossless Scaling"
+description: "LSFG-Android extracts frame-generation shaders from your own Lossless.dll on-device using the Storage Access Framework, then deletes it."
+---
+
+LSFG-Android does not ship, bundle, or download the Lossless Scaling frame-generation shaders. Instead, it extracts them on-device from a copy of `Lossless.dll` that you supply from your own legitimately purchased copy of Lossless Scaling. After extraction, the app stores the shaders in its private app storage and immediately deletes the DLL copy. Nothing in this project distributes Lossless Scaling assets in any form.
+
+<Note>
+  `Lossless.dll` is the property of THS / Lossless Scaling and is not distributed by this project under any circumstances. To obtain it, you must own a copy of [Lossless Scaling on Steam](https://store.steampowered.com/app/993090/Lossless_Scaling/). LSFG-Android will not point you to any other source.
+</Note>
+
+## What Lossless.dll is
+
+`Lossless.dll` is the main library shipped with the Lossless Scaling Windows application. It contains the LSFG frame-generation shaders (`LSFG_3_1` / `LSFG_3_1P`) that this app's Vulkan pipeline depends on. The app uses the [`pe-parse`](https://github.com/trailofbits/pe-parse) library to read the PE binary and extract the shader bytecode from it.
+
+## Extraction process
+
+<Steps>
+  <Step title="Obtain Lossless.dll from your Steam installation">
+    On a Windows PC where you have Lossless Scaling installed, locate `Lossless.dll` in the Lossless Scaling install directory (typically found via **Steam → Library → Lossless Scaling → Manage → Browse local files**). Copy the file to your Android device — for example, by transferring it over USB or placing it in your cloud storage.
+  </Step>
+
+  <Step title="Open the shader setup screen in LSFG-Android">
+    Launch LSFG-Android and navigate to the shader setup section. If shaders have not yet been extracted, the app will prompt you to begin the extraction process.
+  </Step>
+
+  <Step title="Pick Lossless.dll using the file picker">
+    Tap the button to open the file picker. LSFG-Android uses the Android Storage Access Framework, which opens the system file browser. Navigate to the location where you copied `Lossless.dll` and select it.
+
+    The Storage Access Framework means the app never has broad storage access — it reads only the single file you explicitly select.
+  </Step>
+
+  <Step title="Extraction runs on-device">
+    The app reads `Lossless.dll`, extracts the frame-generation shader bytecode, and writes it to LSFG-Android's private app storage. This storage is not accessible to other apps and is not visible in the regular file browser.
+
+    As soon as extraction completes, the app deletes its copy of `Lossless.dll`. The original file you transferred to your device is not touched — only the copy the app received through the file picker is deleted.
+  </Step>
+
+  <Step title="Confirm extraction succeeded">
+    The shader setup screen will indicate that shaders are ready. LSFG-Android is now ready to start frame-generation sessions.
+  </Step>
+</Steps>
+
+## Where shaders are stored
+
+The extracted shader files live in LSFG-Android's private app storage. This location is managed entirely by Android and is not accessible to other apps or to the user through a standard file manager. The files persist across app restarts and do not need to be re-extracted unless you reinstall the app or perform a re-extraction manually.
+
+## If extraction fails
+
+If the extraction step reports an error:
+
+- Verify that the file you selected is `Lossless.dll` from a current Lossless Scaling installation and has not been corrupted during transfer.
+- Make sure the file was obtained from the Lossless Scaling Steam installation directory and not from a third-party source.
+- Try transferring the file again and repeating the extraction.
+
+## Re-extracting shaders
+
+If you reinstall LSFG-Android or the app asks you to re-extract shaders (for example, after an app update that requires a new shader format), repeat the steps above with a fresh copy of `Lossless.dll` from your Steam installation.

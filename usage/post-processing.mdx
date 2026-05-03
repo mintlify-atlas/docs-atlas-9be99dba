@@ -1,0 +1,44 @@
+---
+title: "Post-processing pipelines and enhancements"
+description: "LSFG-Android supports NPU presets via NNAPI, GPU upscaling, and CPU enhancements including LUT, vibrance, saturation, and vignette."
+---
+
+LSFG-Android provides three independent post-processing tiers that run after the frame-generation stage and before the final composite is written to the overlay. Each tier targets a different part of the device's compute stack: the Neural Processing Unit via NNAPI, the GPU, and the CPU. The tiers can be combined — for example, you can apply an NPU sharpening preset and a CPU vibrance adjustment at the same time. Each tier is optional and has no effect on the frame-generation pipeline itself.
+
+<Tabs>
+  <Tab title="NPU — NNAPI presets">
+    NPU presets run neural network inference on the device's Neural Processing Unit via Android's NNAPI interface. They apply learned image-quality enhancements to each generated frame before presentation.
+
+    <Note>
+      NPU presets require a device with a compatible NPU and NNAPI driver support. On devices without a compatible NPU, these presets will either fall back to CPU execution (with a significant performance cost) or be unavailable. Check your device's NNAPI support before enabling.
+    </Note>
+
+    The following presets are available:
+
+    **Sharpen** — Increases edge definition and fine-detail clarity across the frame. Use this preset when the frame-generation output appears soft compared to the source game.
+
+    **Detail boost** — Enhances mid-frequency texture detail beyond what the sharpening preset targets. Suited to games with detailed environments where the generated frames lose subtle surface texture.
+
+    **Chroma clean** — Reduces color noise and chromatic artifacts. Useful in scenes with saturated colors or when the generated frames show color fringing around high-contrast edges.
+
+    **Game crisp** — A combined preset tuned for game content that applies sharpening and detail enhancement together. Use this as a starting point before trying the individual presets.
+  </Tab>
+
+  <Tab title="GPU — upscaling">
+    The GPU upscaling stage runs on the Vulkan-capable GPU and upscales the composited output to a higher resolution before the final overlay write. This allows the frame-generation pipeline to operate at a lower internal resolution — reducing GPU load during the generation phase — while the upscaling stage recovers output sharpness.
+
+    The upscaling stage is independent of the NPU presets and CPU enhancements and can be combined with either.
+  </Tab>
+
+  <Tab title="CPU — enhancements">
+    CPU enhancements are per-frame color and tone adjustments applied on the CPU after the GPU compositing stage. Because they run on the CPU they add latency proportional to the per-frame processing time; keep the number of enabled effects to a minimum on lower-end devices.
+
+    **LUT (Look-Up Table)** — Applies a color grading LUT to remap colors across the full frame. Use this for stylized color grades or to correct display-specific color rendering.
+
+    **Vibrance** — Selectively boosts the saturation of less-saturated colors while leaving already-saturated colors closer to their original values. This produces a more natural-looking saturation increase than a uniform saturation adjustment.
+
+    **Saturation** — Uniformly scales the saturation of all colors in the frame. Increase it to make colors more vivid; decrease it toward zero to approach a grayscale output.
+
+    **Vignette** — Darkens the corners and edges of the frame, drawing attention toward the center. Adjust the intensity and radius to control how prominent the effect is.
+  </Tab>
+</Tabs>

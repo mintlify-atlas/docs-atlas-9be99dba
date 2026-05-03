@@ -1,0 +1,86 @@
+---
+title: 'Build LSFG-Android from source'
+description: 'Build the LSFG-Android APK from source using Android Studio Ladybug, NDK 27.0.12077973, CMake 3.22.1, and JDK 17. Produces arm64-v8a and x86_64 ABIs.'
+---
+
+Building LSFG-Android from source requires cloning the repository with its submodule intact and assembling the APK through Gradle. The native frame-generation library (`lsfg-vk-android`) is compiled as part of the same Gradle build — there is no separate prebuilt `.so` to obtain.
+
+## Toolchain requirements
+
+| Tool | Required version |
+|---|---|
+| Android Studio | Ladybug or later |
+| NDK | 27.0.12077973 |
+| CMake | 3.22.1 |
+| JDK | 17 |
+| C++ standard | C++20 |
+
+**Target SDK configuration**
+
+- `minSdk=29` (Android 10)
+- `targetSdk=35` (Android 15)
+- ABIs: `arm64-v8a` (production), `x86_64` (emulator only)
+
+## Build steps
+
+<Steps>
+  <Step title="Clone the repository with submodules">
+    Clone the repository and initialise the `lsfg-vk-android` submodule at the same time:
+
+    ```sh
+    git clone --recurse-submodules https://github.com/FrankBarretta/LSFG-Android.git
+    ```
+
+    If you already cloned without `--recurse-submodules`, initialise the submodule manually:
+
+    ```sh
+    git submodule update --init --recursive
+    ```
+  </Step>
+
+  <Step title="Verify the folder layout">
+    After cloning, your working directory must contain both folders side-by-side:
+
+    ```
+    LSFG-Android/          ← Android Studio project
+    lsfg-vk-android/       ← submodule (frame-generation library)
+    ```
+
+    <Warning>
+      Do not move or rename either folder. CMake resolves the submodule via the relative path `../../../../../lsfg-vk-android` from the JNI sources. Changing the folder names or structure breaks the native build.
+    </Warning>
+  </Step>
+
+  <Step title="Open in Android Studio">
+    Open the inner `LSFG-Android/` directory (the Android Studio project root) in Android Studio Ladybug or later. Android Studio will sync the Gradle project and download any missing SDK components automatically.
+
+    Confirm that NDK `27.0.12077973` and CMake `3.22.1` are installed via **SDK Manager → SDK Tools**.
+  </Step>
+
+  <Step title="Assemble the APK">
+    Run Gradle from the `LSFG-Android/` project directory:
+
+    ```sh
+    cd LSFG-Android
+    ./gradlew :app:assembleDebug         # or :app:assembleRelease
+    ```
+
+    The assembled APK is written to:
+
+    ```
+    LSFG-Android/app/build/outputs/apk/debug/app-debug.apk
+    ```
+  </Step>
+
+  <Step title="Install on device">
+    Install the APK on a connected device or emulator using `adb`:
+
+    ```sh
+    adb install LSFG-Android/app/build/outputs/apk/debug/app-debug.apk
+    ```
+  </Step>
+</Steps>
+
+## ABI notes
+
+`arm64-v8a` is the production ABI and the one to use on physical Android devices. `x86_64` is built for emulator use only. Both are produced by the same Gradle invocation.

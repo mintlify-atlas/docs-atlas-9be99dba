@@ -1,0 +1,91 @@
+{
+  "projectType": "saas",
+  "projectName": "LSFG-Android",
+  "projectDescription": "An Android application that brings Lossless Scaling frame generation to Android devices via a Vulkan pipeline, MediaProjection capture, and system overlay — no root required.",
+  "theme": "almond",
+  "primaryColor": "#94cb04",
+  "lightColor": "#545454",
+  "darkColor": null,
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "requirements",
+              "installation"
+            ]
+          },
+          {
+            "group": "Setup",
+            "pages": [
+              "setup/first-launch",
+              "setup/permissions",
+              "setup/shader-extraction"
+            ]
+          },
+          {
+            "group": "Using the App",
+            "pages": [
+              "usage/overlay",
+              "usage/settings",
+              "usage/frame-graph-hud",
+              "usage/post-processing"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "advanced/shizuku",
+              "advanced/pacing-presets",
+              "advanced/platform-limits"
+            ]
+          },
+          {
+            "group": "Contributing & Build",
+            "pages": [
+              "build/building-from-source",
+              "build/architecture",
+              "build/lsfg-vk-submodule",
+              "build/contributing"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "GPU-accelerated frame generation (LSFG_3_1 / LSFG_3_1P) via AHardwareBuffer Vulkan sharing",
+    "System overlay with touch passthrough using SYSTEM_ALERT_WINDOW or AccessibilityService",
+    "MediaProjection-based screen capture pipeline for non-rooted devices",
+    "Live in-game settings drawer: multiplier (2x–8x), flow scale, HDR mode, anti-artifacts, vsync, and more",
+    "Automatic per-app overlay that arms when a target game comes to the foreground",
+    "Post-processing pipelines: NPU/NNAPI presets, GPU upscaling, and CPU enhancement (LUT, vibrance, vignette)",
+    "Frame graph HUD with real vs. total FPS, frame-time graph, and pacing diagnostics",
+    "Shizuku integration for privileged timing side-channel and pacing diagnostics",
+    "Crash reporter capturing Java/Kotlin and native signals with stack-walking",
+    "First-launch tutorial for Accessibility setup and Restricted Settings unblock"
+  ],
+  "publicApiSurface": [
+    "LsfgAccessibilityService — TYPE_ACCESSIBILITY_OVERLAY touch passthrough",
+    "Frame generation multiplier: 2x, 3x, 4x, 5x, 6x, 7x, 8x",
+    "Flow scale: 0.25 – 1.0",
+    "Performance mode / HDR mode toggle",
+    "Anti-artifacts toggle",
+    "Bypass mode (hot-apply, no session drop)",
+    "Vsync alignment with slack control",
+    "Pacing presets (hot-apply)",
+    "Target FPS cap",
+    "Queue depth",
+    "EMA jitter smoothing",
+    "NPU presets via NNAPI: sharpen, detail boost, chroma clean, game crisp",
+    "GPU upscaling stage",
+    "CPU enhancement: LUT, vibrance, saturation, vignette",
+    "Shizuku privileged target-UID timing side channel",
+    "Vulkan swapchain output path",
+    "Crash report sharing via ACTION_SEND"
+  ]
+}

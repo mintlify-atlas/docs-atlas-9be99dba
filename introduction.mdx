@@ -1,0 +1,52 @@
+---
+title: "LSFG-Android: Lossless Scaling on Android"
+description: "LSFG-Android brings GPU-accelerated frame generation to Android via a Vulkan pipeline and screen overlay — no root required. Works on Adreno 7xx GPUs."
+---
+
+LSFG-Android ports the [`lsfg-vk`](https://github.com/PancakeTAS/lsfg-vk) Vulkan frame-generation pipeline to Android. On Linux, `lsfg-vk` works as an implicit Vulkan layer that hooks directly into another application's swapchain. Android 12 and newer explicitly blocks loading external code into non-debuggable processes, so that approach is not possible without root. Instead, LSFG-Android captures the screen via the Android `MediaProjection` API, runs frame interpolation on the captured stream, and composites the generated frames in a system overlay that sits on top of the target game — all without requiring root access.
+
+## How it works
+
+The app runs the `lsfg-vk` frame-generation pipeline (`LSFG_3_1` / `LSFG_3_1P`) on-GPU using `AHardwareBuffer` sharing between the app's Vulkan session and the framegen library's internal device. Each session begins with a `MediaProjection` screen capture, which feeds frames into the pipeline. The interpolated output is then composited back onto the screen through a `SYSTEM_ALERT_WINDOW` overlay or, optionally, through `LsfgAccessibilityService` as a `TYPE_ACCESSIBILITY_OVERLAY` for devices with strict untrusted-touch filters.
+
+The overlay is rotation-aware and supports full touch passthrough at full opacity, so the target game remains fully playable while frame generation is active.
+
+## Key differences from PC Lossless Scaling
+
+| | PC Lossless Scaling (Linux `lsfg-vk`) | LSFG-Android |
+|---|---|---|
+| Integration method | Vulkan implicit layer — hooks the app's swapchain directly | `MediaProjection` capture + system overlay |
+| Added latency | Minimal | ~50–80 ms (platform constraint, not a bug) |
+| Root required | No | No |
+| Consent prompt | None | Required at every session start (Android system requirement) |
+| GPU support | Broad | Adreno 7xx-class or newer |
+| Distribution | Package manager / Steam | Sideloaded APK only |
+
+The ~50–80 ms of extra latency is a consequence of the `MediaProjection` capture pipeline and is not something that can be optimised away on non-rooted Android.
+
+## Hardware requirements summary
+
+End-to-end frame generation requires an **Adreno 7xx-class GPU or newer**. The app targets Android 10 (`minSdk=29`) through Android 15 (`targetSdk=35`). No root is required. You also need a legitimately purchased copy of Lossless Scaling on Steam to supply the `Lossless.dll` — the DLL is never bundled or distributed by this project.
+
+See the [Requirements](/requirements) page for the full hardware and software checklist.
+
+<Note>
+  `Lossless.dll` is the property of THS / Lossless Scaling and is **not** shipped, downloaded, or bundled by anything in this repository. You pick your own DLL via the Storage Access Framework. The app extracts the shaders on-device into its private storage, then deletes the DLL copy. Nothing about this project distributes Lossless Scaling assets.
+</Note>
+
+## Where to go next
+
+<CardGroup cols={2}>
+  <Card title="Requirements" icon="clipboard-check" href="/requirements">
+    Supported GPUs, Android versions, and software prerequisites.
+  </Card>
+  <Card title="Installation" icon="download" href="/installation">
+    How to sideload the APK onto your device.
+  </Card>
+  <Card title="First launch" icon="play" href="/setup/first-launch">
+    Accessibility setup and the first-launch tutorial.
+  </Card>
+  <Card title="Settings" icon="sliders" href="/usage/settings">
+    Multiplier, flow scale, pacing presets, and all tuning options.
+  </Card>
+</CardGroup>

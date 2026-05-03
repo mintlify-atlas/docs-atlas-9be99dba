@@ -1,0 +1,54 @@
+---
+title: "Shizuku integration for pacing diagnostics"
+description: "LSFG-Android uses Shizuku for a privileged target-UID-filtered timing side channel that improves pacing diagnostics without touching the video path."
+---
+
+Shizuku is a developer tool for Android that lets an app run privileged shell operations on behalf of another app, without requiring a fully rooted device. LSFG-Android integrates Shizuku as an optional timing side channel: when active, it opens a privileged, target-UID-filtered view of system timing events that feeds the pacing diagnostics subsystem with higher-fidelity data than MediaProjection timestamps alone can provide.
+
+<Note>
+Shizuku is entirely optional. LSFG-Android works without it — MediaProjection timing is always used for the visible video path, and the app falls back to MediaProjection-based pacing diagnostics when Shizuku is unavailable.
+</Note>
+
+## What Shizuku provides
+
+When Shizuku is active, LSFG-Android gains access to a privileged timing side channel filtered to the target app's UID. This gives the pacing engine a more accurate picture of when the target process is actually producing frames, independent of the latency and jitter introduced by the MediaProjection capture pipeline.
+
+Critically, **Shizuku buffers are never fed into the visible video path**. The capture source for every rendered frame remains MediaProjection. Shizuku data is used exclusively for pacing diagnostics — it informs the EMA jitter smoother and vsync alignment logic, but has no effect on what pixels appear on screen.
+
+## Setting up Shizuku
+
+<Steps>
+  <Step title="Install the Shizuku app">
+    Download and install the Shizuku app from its official source. Shizuku is not distributed through Google Play under all configurations, so follow the instructions on the Shizuku project page for your device.
+  </Step>
+  <Step title="Start the Shizuku service">
+    Open the Shizuku app. You will see two activation paths:
+
+    - **ADB (wireless debugging)** — works on any Android 11+ device without root. Enable wireless debugging in Developer Options, then follow the in-app pairing instructions.
+    - **Root** — if your device is rooted, Shizuku can start automatically at boot via the root activation option.
+
+    Confirm the service status indicator in the Shizuku app turns green before proceeding.
+  </Step>
+  <Step title="Grant LSFG-Android the Shizuku permission">
+    On the first session where LSFG-Android attempts to use Shizuku, a system dialog will appear asking whether to allow LSFG-Android to use Shizuku. Tap **Allow**. You can review and revoke this grant at any time from within the Shizuku app under the **Authorized apps** section.
+  </Step>
+  <Step title="Verify the integration is active">
+    Open LSFG-Android and start a session. If Shizuku is running and the permission is granted, the frame graph HUD will display the additional pacing diagnostics sourced from the Shizuku timing side channel. If the Shizuku service is not running, LSFG-Android silently falls back to MediaProjection-based timing.
+  </Step>
+</Steps>
+
+## Metrics available with Shizuku
+
+When the Shizuku timing side channel is active, the following additional diagnostics become visible in the frame graph HUD:
+
+- **Target-UID frame events** — timing signals filtered specifically to the target application's process, giving a cleaner baseline than the screen-capture stream.
+- **Pacing deviation** — how far each generated frame's presentation time drifts from the ideal schedule, calculated using the higher-resolution Shizuku timing data.
+- **EMA-smoothed jitter** — the exponential moving average of frame timing jitter, updated with Shizuku timestamps when available.
+
+## When to use Shizuku vs default MediaProjection timing
+
+Use the default MediaProjection timing for everyday use. It requires no extra setup and is sufficient for normal frame generation.
+
+Enable Shizuku when you want to diagnose pacing problems. If generated frames feel uneven despite a stable FPS counter, the Shizuku side channel gives the pacing engine better input data and exposes timing deviations that are otherwise invisible. This is particularly useful when tuning vsync alignment slack or EMA smoothing parameters for a specific game.
+
+Shizuku's hot-apply path means you can enable or disable it while a session is running without dropping the active capture — no need to restart the overlay.

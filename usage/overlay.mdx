@@ -1,0 +1,54 @@
+---
+title: "Using the frame-generation overlay"
+description: "The LSFG-Android overlay composites interpolated frames over your game in real time. Learn how to launch, move, and interact with it."
+---
+
+The LSFG-Android overlay is a system window that sits on top of your target game and composites the interpolated frames produced by the `lsfg-vk` Vulkan pipeline. Because Android 12+ prevents loading external code into non-debuggable processes, the app captures the screen via `MediaProjection`, runs frame generation on that capture, and composites the result through the overlay rather than hooking the game's own swapchain. The overlay is managed by a foreground service and stays active for the full duration of a session.
+
+## Entry modes
+
+You can bring the overlay on-screen in two ways. Both modes are configured before starting a session and the choice persists across sessions.
+
+<Tabs>
+  <Tab title="Launcher dot">
+    The launcher dot is a small, draggable circle that floats over the screen. Drag it anywhere on the display to keep it out of the way of your game's UI. Tapping the dot expands the overlay to full-screen compositing mode and opens the in-game settings drawer.
+
+    This mode works without any special positioning configuration — the dot remembers its last position across sessions.
+  </Tab>
+  <Tab title="Edge button">
+    The edge button is a fixed icon anchored to a configurable edge of the screen (left, right, top, or bottom). Set the preferred edge in the app's main settings before launching a session. Tapping the button activates the overlay in the same way as the launcher dot.
+
+    The edge button is useful when you want a consistent, non-draggable entry point that stays clear of a specific part of your game's screen.
+  </Tab>
+</Tabs>
+
+## Overlay window modes
+
+The overlay can be hosted in one of two Android window types depending on your device configuration:
+
+- **`SYSTEM_ALERT_WINDOW`** — the default mode. Requires the "Display over other apps" permission. Suitable for most devices.
+- **`TYPE_ACCESSIBILITY_OVERLAY`** — an opt-in mode enabled by turning on `LsfgAccessibilityService` in Android's Accessibility settings. This path is provided for OEMs that apply strict untrusted-touch filters, which can block `SYSTEM_ALERT_WINDOW` overlays from receiving or passing through touches correctly.
+
+<Note>
+  The first-launch tutorial walks you through enabling `LsfgAccessibilityService` and unblocking Restricted Settings, which sideloaded APKs trigger on Android 13+.
+</Note>
+
+## Touch passthrough
+
+At full opacity the overlay passes all touches through to the game beneath it. You do not need to reduce opacity or disable the overlay to interact with your game normally. Touch passthrough is implemented at the window level and is active whenever the overlay is in compositing mode and the settings drawer is closed.
+
+## Automatic per-app overlay
+
+Instead of manually activating the overlay each time, you can configure a list of target apps in the app's settings. When any app on that list comes to the foreground, the overlay arms automatically — the launcher dot or edge button appears without you having to open LSFG-Android first. When the target game moves to the background the overlay disarms.
+
+## Rotation and immersive-mode handling
+
+The overlay components are rotation-aware and redraw correctly when the device rotates between portrait and landscape. Immersive-mode games that hide the system bars are also handled: the overlay does not interfere with immersive mode and re-positions itself when system bar insets change.
+
+## Opening the in-game settings drawer
+
+Tap the launcher dot or edge button while the overlay is active to slide open the settings drawer. The drawer gives you access to all frame-generation parameters without leaving your game. Close the drawer by tapping outside it or using the close gesture; the overlay returns to transparent compositing mode immediately.
+
+## Bypass mode
+
+Bypass mode keeps the overlay session alive and `MediaProjection` running but disables frame generation output. The display shows the unmodified captured frames at their natural rate. Bypass is a hot-apply setting — toggling it does not drop the current session or re-initialize the native Vulkan context. Use it to compare frame-generated and native output without restarting, or to temporarily reduce GPU load while keeping the session ready.

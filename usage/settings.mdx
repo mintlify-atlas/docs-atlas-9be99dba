@@ -1,0 +1,116 @@
+---
+title: "Frame generation settings reference"
+description: "Complete reference for every LSFG-Android setting — multiplier, flow scale, HDR mode, vsync alignment, pacing, queue depth, and more."
+---
+
+The live in-game settings drawer is accessible by tapping the launcher dot or edge button while a session is running. It exposes every frame-generation parameter without requiring you to stop and restart the session. Most settings re-initialize the native Vulkan context when changed, which causes a brief interruption while the pipeline is rebuilt. A small number of settings have hot-apply paths that take effect immediately without dropping the session — these are called out explicitly below.
+
+<AccordionGroup>
+  <Accordion title="Multiplier (2×–8×)">
+    Controls how many frames the pipeline generates for every real source frame captured by `MediaProjection`.
+
+    | Value | Output behavior |
+    |-------|----------------|
+    | 2×    | One generated frame inserted between each real frame |
+    | 4×    | Three generated frames inserted between each real frame |
+    | 8×    | Seven generated frames inserted between each real frame |
+
+    Higher multipliers increase the apparent frame rate but also increase GPU load and the risk of motion artifacts in fast-moving scenes. Start at 2× and increase only if your device has headroom.
+
+    **Apply behavior:** Re-initializes the native context.
+  </Accordion>
+
+  <Accordion title="Flow scale (0.25–1.0)">
+    Scales the internal resolution at which the optical-flow motion estimator runs. Lower values reduce the resolution of the motion estimation pass, improving performance at the cost of accuracy in complex motion scenes.
+
+    | Value | Effect |
+    |-------|--------|
+    | 1.0   | Full-resolution motion estimation — highest quality |
+    | 0.5   | Half-resolution — balanced quality and performance |
+    | 0.25  | Quarter-resolution — maximum performance, reduced accuracy |
+
+    Reduce flow scale first when the device is thermal-throttling before lowering the multiplier.
+
+    **Apply behavior:** Re-initializes the native context.
+  </Accordion>
+
+  <Accordion title="Performance mode">
+    Switches the pipeline between a quality-optimized and a performance-optimized code path. Enabling performance mode reduces GPU load at the cost of some output quality. Use it on mid-range Adreno 7xx devices or when sustained frame rates are more important than per-frame fidelity.
+
+    **Apply behavior:** Re-initializes the native context.
+  </Accordion>
+
+  <Accordion title="HDR mode">
+    Enable this when the target game is outputting HDR content. The pipeline adjusts its internal color handling to avoid clipping or tone-mapping errors that would otherwise occur when processing an HDR `MediaProjection` stream.
+
+    Leave this off for SDR games — enabling it on an SDR source will not improve quality and may introduce color shifts.
+
+    **Apply behavior:** Re-initializes the native context.
+  </Accordion>
+
+  <Accordion title="Anti-artifacts">
+    Activates an additional post-generation pass that reduces visual artifacts — such as ghosting or edge tearing — at scene cuts and in regions with complex occlusion. The pass adds GPU overhead, so disable it if you are close to your device's thermal limit.
+
+    **Apply behavior:** Re-initializes the native context.
+  </Accordion>
+
+  <Accordion title="Bypass mode">
+    Keeps the overlay session alive and `MediaProjection` running while disabling frame generation output. The display shows unmodified source frames at their natural rate. Useful for comparing generated and native output without restarting a session.
+
+    **Apply behavior:** Hot-apply — no session drop or context re-initialization.
+  </Accordion>
+
+  <Accordion title="Vsync alignment and slack">
+    Aligns frame output timing to the display's vsync signal to reduce tearing and improve perceptual smoothness. The **slack** control sets the tolerance window (in milliseconds) around the vsync deadline. A larger slack allows the pipeline more time to complete a frame before the deadline is considered missed; a smaller slack produces tighter timing but is more sensitive to GPU variance.
+
+    Tune slack upward if you observe stutter that coincides with vsync misses shown in the frame graph HUD.
+
+    **Apply behavior:** Re-initializes the native context.
+  </Accordion>
+
+  <Accordion title="Pacing presets">
+    Selects a frame-pacing strategy that controls how generated frames are distributed across the output timeline. Different presets prioritize different tradeoffs between latency, smoothness, and tolerance for uneven source frame delivery.
+
+    Pacing presets are designed to be experimented with while a session is running.
+
+    **Apply behavior:** Hot-apply — no session drop or context re-initialization.
+  </Accordion>
+
+  <Accordion title="Target FPS cap">
+    Sets the maximum output frame rate. The pipeline will not present frames faster than this limit regardless of how many frames are generated. Use this to match your display's refresh rate or to stay within a thermal budget.
+
+    Setting the cap to 0 or leaving it unconfigured disables the limit.
+
+    **Apply behavior:** Re-initializes the native context.
+  </Accordion>
+
+  <Accordion title="Queue depth">
+    Controls how many frames are buffered in the pipeline at one time. A deeper queue smooths over transient GPU spikes but adds latency proportional to the number of buffered frames. A shallower queue reduces latency but makes the output more sensitive to frame-time variance.
+
+    The optimal value depends on your device's GPU consistency. Start at the default and increase only if you see stutter in the frame-time graph that a deeper buffer would absorb.
+
+    **Apply behavior:** Re-initializes the native context.
+  </Accordion>
+
+  <Accordion title="EMA jitter smoothing">
+    Applies an exponential moving average filter to the measured frame timing before it is used to schedule output frames. This smooths over small timing jitter introduced by the OS scheduler and `MediaProjection` delivery, producing more even frame spacing. The EMA weight parameter controls how aggressively recent samples are weighted; a higher weight makes the filter more responsive but less smoothing, and a lower weight produces stronger smoothing at the cost of responsiveness to genuine frame-rate changes.
+
+    **Apply behavior:** Hot-apply — no session drop or context re-initialization.
+  </Accordion>
+</AccordionGroup>
+
+## Hot-apply vs. re-init summary
+
+| Setting | Apply behavior |
+|---------|---------------|
+| Multiplier | Re-initializes native context |
+| Flow scale | Re-initializes native context |
+| Performance mode | Re-initializes native context |
+| HDR mode | Re-initializes native context |
+| Anti-artifacts | Re-initializes native context |
+| Bypass mode | Hot-apply |
+| Vsync alignment / slack | Re-initializes native context |
+| Pacing presets | Hot-apply |
+| Target FPS cap | Re-initializes native context |
+| Queue depth | Re-initializes native context |
+| EMA jitter smoothing | Hot-apply |

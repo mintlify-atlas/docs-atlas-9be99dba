@@ -1,0 +1,54 @@
+---
+title: 'LSFG-Android app architecture overview'
+description: 'LSFG-Android is a Kotlin + Jetpack Compose Android app with a JNI/C++ render loop and Vulkan-based frame-generation pipeline from lsfg-vk.'
+---
+
+LSFG-Android is structured as two cooperating components: a Kotlin + Jetpack Compose Android application and a patched branch of the `lsfg-vk` frame-generation library. The Android app handles the UI, permissions, overlay lifecycle, and MediaProjection capture, while the native library runs the Vulkan frame-generation pipeline. Both are compiled together in a single Gradle build with no separate prebuilt `.so`.
+
+## Repository layout
+
+| Path | What it is |
+|---|---|
+| `LSFG-Android/` | Android Studio project — Kotlin + Jetpack Compose UI, JNI/C++ render loop. The user-facing app. |
+| `lsfg-vk-android/` | Submodule. Branch of [`lsfg-vk`](https://github.com/PancakeTAS/lsfg-vk) 1.0.0 with Android-specific patches added on top (`AHardwareBuffer`-based image sharing, `createContextFromAHB`, `waitIdle`). All patches are guarded by `#ifdef __ANDROID__`, so the original Linux build path still works unchanged. |
+
+## Main components
+
+<CardGroup cols={2}>
+  <Card title="LSFG-Android-Application" icon="mobile">
+    The user-facing Android Studio project. Written in Kotlin with a Jetpack Compose UI. Contains the JNI/C++ render loop that bridges the Compose layer to the native frame-generation context, the foreground service that keeps the overlay alive, the MediaProjection capture pipeline, and the crash reporter.
+  </Card>
+  <Card title="lsfg-vk-android" icon="cpu">
+    A patched branch of `lsfg-vk` 1.0.0. Provides the Vulkan frame-generation pipeline compiled directly into the app via CMake `add_subdirectory()`. Android-specific changes are isolated behind `#ifdef __ANDROID__` so the upstream Linux build is unaffected.
+  </Card>
+</CardGroup>
+
+## Frame-generation pipeline
+
+The end-to-end pipeline runs as follows:
+
+1. **MediaProjection capture** — the foreground service acquires a `MediaProjection` token and opens a `VirtualDisplay` to capture the screen.
+2. **AHardwareBuffer sharing** — captured frames are exposed to the native layer as `AHardwareBuffer` objects, which are imported into the Vulkan session without a CPU round-trip.
+3. **Vulkan frame generation** — `lsfg-vk-android` interpolates intermediate frames using the LSFG_3_1 / LSFG_3_1P algorithms on-GPU.
+4. **Overlay compositor** — generated frames are composited in a system overlay (`SYSTEM_ALERT_WINDOW` or `TYPE_ACCESSIBILITY_OVERLAY`) that sits on top of the target game.
+
+## CMake integration
+
+The `lsfg-vk-android` submodule is pulled into the Android build via CMake `add_subdirectory()`. There is no prebuilt `.so` — building the app compiles the frame-generation library transparently for `arm64-v8a` and `x86_64`. CMake resolves the submodule via the relative path `../../../../../lsfg-vk-android` from the JNI sources, which means both folders must remain side-by-side as cloned.
+
+## Foreground service
+
+The overlay runs inside a foreground service so that Android does not terminate it when the user switches to the target game. The service holds the `MediaProjection` session and manages the Vulkan context lifetime.
+
+## Crash reporter
+
+The crash reporter captures both Java/Kotlin uncaught exceptions and native signals (`SIGSEGV`, `SIGABRT`, and others) with stack-walking. Crash reports can be shared directly from the in-app crash screen via `ACTION_SEND`.
+
+## Third-party native dependencies
+
+| Library | Role |
+|---|---|
+| `volk` | Vulkan meta-loader |
+| `pe-parse` | PE binary parsing (used to extract shaders from `Lossless.dll`) |
+| DXVK `dxbc` translator | DXBC shader translation |
+| Shizuku | Privileged timing side channel for pacing diagnostics |

@@ -1,0 +1,48 @@
+---
+title: "Pacing presets and frame timing control"
+description: "LSFG-Android pacing presets control how generated frames are timed and presented. Presets apply instantly without dropping the active session."
+---
+
+Frame pacing describes how evenly generated frames are delivered to the display over time. Even when the raw frame rate is high, irregular spacing between frames — jitter — produces a stuttery feel that does not match the numerical FPS. LSFG-Android exposes a set of pacing controls that let you tune this timing behavior for the target game and display hardware, and all pacing parameters support hot-apply: changing them takes effect immediately without dropping the active session or restarting the overlay.
+
+<Warning>
+LSFG-Android operates on a MediaProjection screen-capture stream. This introduces approximately 50–80 ms of additional end-to-end latency compared to the Linux Vulkan layer approach. This is a hard Android platform constraint, not a bug, and cannot be reduced by any pacing preset. See [Android platform limits](/advanced/platform-limits) for full context.
+</Warning>
+
+## Pacing presets
+
+Pacing presets are named configurations that bundle a set of timing parameters together. Selecting a preset applies all of its values at once, giving you a quick way to switch between tuned profiles — for example, a low-latency preset that prioritizes responsiveness and a smooth-playback preset that prioritizes even frame spacing. Presets apply instantly via LSFG-Android's hot-apply path, so you can switch between them mid-session to compare the effect in real time.
+
+## Individual timing controls
+
+<AccordionGroup>
+  <Accordion title="Vsync alignment with slack control">
+    Vsync alignment schedules generated frame output to land in sync with the display's vertical blanking interval. When enabled, frames are held briefly if necessary so they are presented at the next vsync boundary rather than at an arbitrary point in the refresh cycle.
+
+    The slack control sets a tolerance window around each vsync deadline. A tighter slack value produces more precise vsync alignment but increases the risk of missing a deadline and waiting an extra refresh cycle. A looser value is more forgiving but allows more timing deviation. Tuning slack is most effective when used alongside EMA jitter smoothing.
+  </Accordion>
+
+  <Accordion title="EMA jitter smoothing">
+    EMA (exponential moving average) jitter smoothing reduces the variance in frame presentation times by applying a weighted rolling average to the measured frame timing. Recent samples are weighted more heavily than older ones, so the smoother adapts to gradual changes in game frame rate while dampening short-term spikes.
+
+    Higher smoothing weights reduce jitter at the cost of responsiveness to sudden changes in the source frame rate. Lower weights track the source more closely but pass through more jitter. When Shizuku is active, the EMA smoother is fed higher-resolution timing data, improving its accuracy.
+  </Accordion>
+
+  <Accordion title="Target FPS cap">
+    The target FPS cap sets an upper bound on the rate at which generated frames are presented. When the frame generation multiplier would otherwise produce more frames per second than the cap allows, surplus frames are dropped or delayed to stay within the limit.
+
+    The cap interacts with vsync alignment: if the cap is set to a value that does not divide evenly into the display refresh rate, vsync alignment will alternate between hitting different vsync boundaries, which can introduce a periodic pattern into frame timing. Setting the cap to a divisor of the display refresh rate (for example, 60 on a 120 Hz display) produces the most regular output.
+  </Accordion>
+
+  <Accordion title="Queue depth">
+    Queue depth controls how many generated frames are buffered before presentation. A deeper queue smooths over momentary gaps in frame production — if the source game hitches for a frame or two, the buffer absorbs the gap and output continues uninterrupted.
+
+    The tradeoff is latency. Each additional frame in the queue adds roughly one frame period of end-to-end delay on top of the baseline MediaProjection latency. A queue depth of one minimizes added latency but offers no cushion against source hitches. Larger values increase smoothness at the cost of responsiveness.
+  </Accordion>
+</AccordionGroup>
+
+## Choosing a starting point
+
+For most games, start with a preset that matches your display's refresh rate, then enable vsync alignment with a moderate slack value. If you see residual jitter in the frame graph HUD, increase the EMA smoothing weight. If the HUD shows that frames are regularly missing vsync deadlines, loosen the slack or reduce the target FPS cap.
+
+The 50–80 ms MediaProjection baseline latency is present regardless of preset. Pacing presets control smoothness and consistency within that latency budget — they do not reduce the baseline.

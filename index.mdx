@@ -1,133 +1,67 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
-icon: 'star'
+title: "LSFG-Android: Frame generation on Android"
+description: "Bring Lossless Scaling frame generation to Android with a Vulkan pipeline, MediaProjection capture, and system overlay — no root required."
 ---
 
-## Setting up
+LSFG-Android brings the [lsfg-vk](https://github.com/PancakeTAS/lsfg-vk) Vulkan frame-generation pipeline to Android devices. It captures your game via `MediaProjection`, runs frame interpolation on-GPU using AHardwareBuffer sharing, and composites the generated frames in a transparent system overlay that sits on top of any game — no root required.
 
-Get your documentation site up and running in minutes.
-
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Requirements" icon="mobile-screen" href="/requirements">
+    Check device compatibility — Adreno 7xx GPU, Android 10+, and a copy of Lossless Scaling
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Installation" icon="download" href="/installation">
+    Download the APK and sideload it onto your Android device in minutes
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="First Launch" icon="play" href="/setup/first-launch">
+    Walk through the first-launch tutorial and get the overlay running
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="Settings Reference" icon="sliders" href="/usage/settings">
+    Every frame-generation parameter explained — multiplier, flow scale, pacing, and more
   </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## How it works
 
-Everything you need to create world-class documentation.
+LSFG-Android works by capturing your screen through Android's `MediaProjection` API, running frame interpolation on-GPU via the `lsfg-vk` pipeline, and compositing the result in a `SYSTEM_ALERT_WINDOW` (or `TYPE_ACCESSIBILITY_OVERLAY`) that floats above your game.
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+<Steps>
+  <Step title="Install and grant permissions">
+    Sideload the APK, then grant overlay and screen-capture permissions. On Android 13+ you'll need to unblock Restricted Settings — the first-launch tutorial walks you through it.
+  </Step>
+  <Step title="Extract shaders from your Lossless Scaling DLL">
+    Pick your legitimately purchased `Lossless.dll` using the Storage Access Framework. LSFG-Android extracts the shaders on-device, stores them in private app storage, and immediately deletes the DLL copy.
+  </Step>
+  <Step title="Select target apps">
+    Choose which games should trigger the overlay. The overlay arms automatically when one of your target apps comes to the foreground.
+  </Step>
+  <Step title="Play and tune">
+    Open your game. Use the draggable settings drawer to adjust multiplier, flow scale, pacing, and post-processing in real time.
+  </Step>
+</Steps>
 
-## Make your content agent ready
+<Note>
+  LSFG-Android requires a legitimately purchased copy of [Lossless Scaling](https://store.steampowered.com/app/993090/Lossless_Scaling/) on Steam. The `Lossless.dll` is never distributed, downloaded, or bundled by this project.
+</Note>
 
-Make your docs work for humans and AI agents alike.
+## Key capabilities
 
-<Columns cols={2}>
-  <Card
-    title="Prompt component"
-    icon="robot"
-    href="/agent-ready/prompt"
-  >
-    Embed shareable AI prompts readers can copy or open in Cursor.
+<CardGroup cols={2}>
+  <Card title="Frame generation" icon="film" href="/usage/settings">
+    2×–8× multiplier using LSFG_3_1 / LSFG_3_1P algorithms, running entirely on-GPU
   </Card>
-  <Card
-    title="Visibility"
-    icon="eye"
-    href="/agent-ready/visibility"
-  >
-    Show different content to humans and agents reading your docs.
+  <Card title="System overlay" icon="layer-group" href="/usage/overlay">
+    Transparent overlay with full touch passthrough and rotation awareness
   </Card>
-  <Card
-    title="Contextual menu"
-    icon="bolt"
-    href="/agent-ready/contextual"
-  >
-    Give readers one-click access to Claude, ChatGPT, Cursor, and more.
+  <Card title="Post-processing" icon="wand-magic-sparkles" href="/usage/post-processing">
+    NPU presets, GPU upscaling, and CPU enhancements (LUT, vibrance, vignette)
   </Card>
-  <Card
-    title="AI coding tools"
-    icon="wand-magic-sparkles"
-    href="/ai-tools/claude-code"
-  >
-    Set up Claude Code, Cursor, or Windsurf with Mintlify's skill.
+  <Card title="Frame graph HUD" icon="chart-line" href="/usage/frame-graph-hud">
+    Real-time FPS counter, frame-time graph, and pacing diagnostics overlay
   </Card>
-</Columns>
-
-## Need inspiration?
-
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+  <Card title="Shizuku integration" icon="terminal" href="/advanced/shizuku">
+    Privileged timing side-channel for precise pacing diagnostics
+  </Card>
+  <Card title="Build from source" icon="code" href="/build/building-from-source">
+    Full build instructions for developers — Kotlin + JNI/C++ with CMake
+  </Card>
+</CardGroup>

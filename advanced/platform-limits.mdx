@@ -1,0 +1,67 @@
+---
+title: "Android platform limits and constraints"
+description: "LSFG-Android faces hard Android platform constraints: no Vulkan implicit layers, MediaProjection latency, and Google Play incompatibility."
+---
+
+On Linux, the `lsfg-vk` Vulkan layer hooks directly into a game's swapchain at the driver level, adding frame generation with minimal overhead and no added latency. Android does not offer an equivalent mechanism on non-rooted devices. The constraints described on this page are properties of the Android platform itself — they are not implementation choices that future versions of LSFG-Android can remove. Understanding them sets accurate expectations for what the app can and cannot do.
+
+## Comparison: LSFG-Android vs Linux lsfg-vk
+
+| Capability | LSFG-Android | Linux lsfg-vk |
+|---|---|---|
+| Frame generation algorithm | LSFG_3_1 / LSFG_3_1P via lsfg-vk | LSFG_3_1 / LSFG_3_1P |
+| Integration method | MediaProjection screen capture + system overlay | Vulkan implicit layer hooked into app swapchain |
+| Added end-to-end latency | ~50–80 ms | Near zero |
+| Requires user consent per session | Yes (MediaProjection dialog) | No |
+| Persistent system capture indicator | Yes | No |
+| GPU support | Adreno 7xx-class and newer | Depends on Linux driver |
+| Root required | No (sideload only) | No |
+| Google Play distribution | Incompatible | N/A |
+
+## Platform limits in detail
+
+### No Vulkan implicit layer mechanism
+
+<Warning>
+Android 12+ explicitly blocks loading external code into non-debuggable processes. This is an OS-level security restriction that applies to all apps on non-rooted Android, and it cannot be worked around in userspace.
+</Warning>
+
+On Linux, a Vulkan implicit layer can be installed system-wide and the driver loads it automatically into any Vulkan application. Android has no equivalent mechanism for non-rooted devices. Because LSFG-Android cannot inject a layer into another app's Vulkan process, it cannot hook that app's swapchain. Frame generation must operate on a copy of the screen rather than on the raw render output.
+
+### MediaProjection as the capture source
+
+Because swapchain hooking is not possible, LSFG-Android captures frames using `MediaProjection` — Android's screen recording API. Frame generation runs on this capture stream, and the result is composited in a system overlay on top of the target game. This architecture works without root and without modifying the target app, but it introduces the constraints described below.
+
+### Added latency (~50–80 ms)
+
+<Warning>
+The approximately 50–80 ms of end-to-end latency added by LSFG-Android versus the Linux Vulkan layer is a consequence of the MediaProjection pipeline. It is a platform constraint, not a bug. No pacing preset or configuration option can eliminate this baseline.
+</Warning>
+
+Every captured frame must travel through the MediaProjection API, be processed by the frame generation pipeline, and then be composited in the overlay before it reaches the display. This round trip takes roughly 50–80 ms more than a direct swapchain hook. The pacing controls in LSFG-Android can improve frame spacing consistency within this latency budget but cannot reduce the baseline itself.
+
+### Explicit user consent and persistent system indicator
+
+`MediaProjection` requires the user to explicitly grant screen capture permission at the start of every session. Android displays a system dialog that cannot be suppressed or pre-approved, and a persistent notification or indicator remains visible for the duration of the session to inform the user that screen recording is active. These are mandatory Android platform behaviors.
+
+### Google Play incompatibility
+
+<Warning>
+LSFG-Android cannot be distributed on Google Play. Attempting to publish it would violate Play policy. The app must be installed as a sideloaded APK.
+</Warning>
+
+LSFG-Android combines three capabilities that together violate Google Play's developer policy:
+
+- `SYSTEM_ALERT_WINDOW` — the overlay permission used to draw over other apps
+- Screen capture via `MediaProjection`
+- `AccessibilityService` — used for the touch-passthrough path on OEMs with strict untrusted-touch filters
+
+No individual capability is banned, but their combination in a single app is not permitted under Play policy. Distribution is only possible as a sideloaded APK outside of any app store.
+
+### GPU support: Adreno 7xx-class and newer
+
+End-to-end frame generation currently works on Adreno 7xx-class GPUs and newer. Other GPU families are not confirmed to work.
+
+### The Magisk module path (out of scope)
+
+The only realistic way to match the Linux lsfg-vk experience on Android — zero-overhead swapchain hooking, no added latency, no capture consent prompt — would be to install a Vulkan implicit layer into `/system/etc/vulkan/implicit_layer.d/` via a Magisk module. This would give Android the same implicit layer loading path that Linux provides. That path is out of scope for this project and would require a rooted device with Magisk installed.

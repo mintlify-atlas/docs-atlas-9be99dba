@@ -1,0 +1,52 @@
+---
+title: 'The lsfg-vk-android submodule'
+description: 'lsfg-vk-android is a patched branch of lsfg-vk 1.0.0 with Android-specific changes guarded by #ifdef __ANDROID__, leaving Linux builds unchanged.'
+---
+
+`lsfg-vk-android` is a branch of [PancakeTAS/lsfg-vk](https://github.com/PancakeTAS/lsfg-vk) 1.0.0 that adds the Android-specific patches needed to run the Vulkan frame-generation pipeline on Android. It lives as a Git submodule inside the LSFG-Android repository and is compiled directly into the Android app — there is no separate prebuilt library to manage.
+
+## Submodule details
+
+| Property | Value |
+|---|---|
+| Upstream repository | [`PancakeTAS/lsfg-vk`](https://github.com/PancakeTAS/lsfg-vk) |
+| Base version | 1.0.0 |
+| Submodule URL | `https://github.com/FrankBarretta/lsfg-vk-android.git` |
+| Branch | `release` |
+
+## Android-specific patches
+
+Three categories of changes are applied on top of the upstream `lsfg-vk` 1.0.0 codebase:
+
+- **AHardwareBuffer-based image sharing** — replaces the Linux image-sharing path with one that operates on Android `AHardwareBuffer` objects, allowing captured frames to be imported into the Vulkan session without a CPU copy.
+- **`createContextFromAHB`** — a new entry point that initialises a frame-generation context from an `AHardwareBuffer`, used by the JNI layer in the Android app.
+- **`waitIdle`** — an Android-specific synchronisation call added to ensure the Vulkan device is idle before the overlay compositor reads back generated frames.
+
+All three changes are enclosed in `#ifdef __ANDROID__` guards. The original Linux build path is entirely unmodified — building `lsfg-vk-android` on Linux with the upstream build commands produces the same result as building the unpatched `lsfg-vk` 1.0.0.
+
+<Note>
+  `lsfg-vk-android` is a derivative work of `lsfg-vk` by PancakeTAS. Any fork or redistribution must preserve the upstream `lsfg-vk` attribution as required by the MIT license inherited from the upstream repository. See [Contributing](/build/contributing) for the full attribution requirements.
+</Note>
+
+## CMake integration
+
+The submodule is integrated into the Android build via CMake `add_subdirectory()`:
+
+```cmake
+add_subdirectory(../../../../../lsfg-vk-android framegen)
+```
+
+The path is relative to the JNI sources inside `LSFG-Android/`. Both the `LSFG-Android/` project folder and the `lsfg-vk-android/` submodule folder must remain side-by-side at the repository root. Moving or renaming either folder breaks this path and causes the native build to fail.
+
+## Frame-generation algorithms
+
+The submodule exposes two frame-generation algorithms:
+
+- **LSFG_3_1** — the standard Lossless Scaling frame-generation algorithm.
+- **LSFG_3_1P** — a performance variant of LSFG_3_1.
+
+Both run on-GPU via the AHardwareBuffer-based Vulkan pipeline described above.
+
+## Standalone Linux build
+
+For building the patched `lsfg-vk` as a standalone Linux library, refer to the instructions in `lsfg-vk-android/README.md`. Because all Android patches are guarded by `#ifdef __ANDROID__`, the upstream build commands work unchanged on Linux.

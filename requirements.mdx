@@ -1,0 +1,46 @@
+---
+title: "Device and software requirements"
+description: "LSFG-Android requires an Adreno 7xx-class GPU or newer, Android 10+, and a legitimately purchased copy of Lossless Scaling on Steam."
+---
+
+Before installing LSFG-Android, confirm that your device meets the GPU and OS requirements and that you have the necessary software. The most important constraint is the GPU: frame generation relies on Vulkan features and `AHardwareBuffer` sharing that are currently verified only on Adreno 7xx-class hardware and newer.
+
+## Requirements overview
+
+| Requirement | Minimum |
+|---|---|
+| GPU | Adreno 7xx-class or newer |
+| Android version | Android 10 (API 29) |
+| Tested up to | Android 15 (API 35) |
+| Root | Not required |
+| Lossless Scaling | Legitimately purchased copy on Steam |
+
+## GPU
+
+<Warning>
+  End-to-end frame generation works today on **Adreno 7xx-class GPUs and newer**. Other GPU families (Mali, Immortalis, Dimensity integrated GPUs, etc.) are not currently supported. Do not install LSFG-Android expecting frame generation to work on non-Adreno or older Adreno hardware.
+</Warning>
+
+LSFG-Android uses `AHardwareBuffer`-based image sharing between the app's Vulkan session and the framegen library's internal device. This path has been tested and confirmed working on Adreno 7xx-class hardware. Support for other GPU families may be added in the future.
+
+## Android version
+
+The app targets `minSdk=29` (Android 10) through `targetSdk=35` (Android 15). Any Android 10 or newer device with a supported GPU can run the app.
+
+Android 12 introduced the restriction that prevents loading external Vulkan layers into non-debuggable processes. This is the reason LSFG-Android uses the `MediaProjection` + overlay approach rather than the direct swapchain hook used by the Linux version.
+
+## Lossless Scaling
+
+You need a legitimately purchased copy of [Lossless Scaling](https://store.steampowered.com/app/993090/Lossless_Scaling/) on Steam to obtain `Lossless.dll`. The DLL is **never** bundled, downloaded, or distributed by LSFG-Android.
+
+During setup, you pick the DLL from your device storage using the Android Storage Access Framework. The app extracts the frame-generation shaders on-device into its private storage, then immediately deletes the DLL copy. The extracted shaders are used for the Vulkan pipeline at runtime.
+
+## Known limitations
+
+These are platform constraints, not bugs.
+
+**Extra latency.** The `MediaProjection` capture pipeline adds approximately **50–80 ms** of latency compared to the Linux `lsfg-vk` Vulkan layer, which hooks the swapchain directly. On non-rooted Android there is no equivalent to the Linux implicit layer mechanism, so this overhead cannot be eliminated without root.
+
+**Session consent prompt.** `MediaProjection` requires explicit user consent at the start of every session. Android also surfaces a persistent system notification indicator while screen capture is active. Both are Android platform requirements.
+
+A Magisk module installing a Vulkan implicit layer into `/system/etc/vulkan/implicit_layer.d/` would be the only realistic path to match the Linux latency, but that is out of scope for this project.

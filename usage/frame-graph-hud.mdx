@@ -1,0 +1,33 @@
+---
+title: "Frame graph HUD and diagnostics"
+description: "The LSFG-Android frame graph HUD shows real vs. total FPS, a live frame-time graph, and pacing diagnostics rendered as an in-game overlay."
+---
+
+The frame graph HUD is an optional diagnostic overlay that renders on top of the composited output while a session is running. It gives you a live view of the pipeline's health — from raw capture throughput through to the final presented frame rate — without leaving your game. All metrics update in real time and are drawn directly into the overlay window, so they are always visible regardless of what the game is doing.
+
+## Enabling and disabling the HUD
+
+Open the in-game settings drawer by tapping the launcher dot or edge button, then toggle the **Frame graph HUD** switch. The HUD appears or disappears immediately without affecting the running session. You can also enable the HUD from the main app settings before starting a session.
+
+## Metrics
+
+### Real FPS
+
+The real FPS counter shows the number of source frames delivered by `MediaProjection` per second. This is the frame rate that the game itself is producing — the raw input to the frame-generation pipeline. If real FPS is low, the source game is the bottleneck rather than LSFG-Android.
+
+### Total FPS
+
+The total FPS counter shows the number of frames actually presented to the display per second, including both real source frames and all generated frames. For example, with a 2× multiplier and 30 real FPS you would expect approximately 60 total FPS. A large gap between total FPS and the theoretical multiplied value indicates the pipeline is dropping generated frames.
+
+### Frame-time graph
+
+The frame-time graph plots the time between consecutive presented frames over a rolling window. Consistent bars of equal height indicate smooth, evenly paced output. Tall spikes indicate a frame took longer than expected to produce or present. Patterns to look for:
+
+- **Uniform bars** — pipeline is running smoothly within its budget.
+- **Periodic tall spikes** — likely vsync misses; try increasing vsync slack or switching pacing preset.
+- **Increasing average height** — thermal throttling is raising frame time; reduce multiplier or flow scale.
+- **Irregular variance** — source frame delivery from `MediaProjection` is uneven; EMA jitter smoothing may help.
+
+### Pacing diagnostics
+
+The pacing diagnostics section shows information about how generated frames are being distributed across the output timeline. It surfaces whether the selected pacing preset is meeting its timing targets and whether frames are being held, dropped, or delivered ahead of schedule. Use this alongside the frame-time graph to evaluate which pacing preset produces the most consistent output on your device.
